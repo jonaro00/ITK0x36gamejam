@@ -3,29 +3,27 @@ from pygame import Vector2
 
 
 class GameObject:
-    def __init__(self, texture: pg.Surface, size=None, pos=(0, 0), visible=True):
-        size = texture.get_size() if size is None else size
-        self.texture = pg.transform.scale(texture, size)
-        self._pos = pos
+    def __init__(self, texture: pg.Surface, size=None, pos=(0, 0), centered=False, visible=True):
+        self.size = texture.get_size() if size is None else size
+        self.texture = pg.transform.scale(texture, self.size)
+        self._pos = Vector2(pos)
+        if centered:
+            self.pos -= Vector2(self.size) / 2
         self.visible = visible
 
     def show(self):
-       self.visible = True
+        self.visible = True
 
     def hide(self):
-       self.visible = False
+        self.visible = False
 
     @property
     def pos(self) -> Vector2:
-        return Vector2(self._pos)
+        return self._pos
 
     @pos.setter
     def pos(self, value):
         self._pos = Vector2(value)
-
-    @property
-    def size(self) -> tuple:
-        return self.texture.get_size()
 
     @property
     def rect(self) -> pg.Rect:

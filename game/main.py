@@ -9,7 +9,7 @@ def main():
 
     pg.display.set_icon(pg.image.load(package_dir / 'images/icon.png'))
     window = pg.display.set_mode((925, 600))
-    pg.display.set_caption('ITK LAN 0x36 GAME JAM JAM')
+    pg.display.set_caption('ITK LAN 0x36 GAME JAM - jonaro00')
     clock = pg.time.Clock()
 
     gc = Core(window)

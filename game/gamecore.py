@@ -1,3 +1,4 @@
+from os import P_OVERLAY
 import pygame as pg
 from pygame import Vector2
 
@@ -34,6 +35,8 @@ class Core:
 
         self.player = GameObject(self.GFX['nat.png'], size=(60,50))
         self.playerspeed = 4
+        self.pathing_to = self.player.rect.center
+        self.pointer = Pointer(self.GFX['pointer.png'], pos=(-100, -100))
 
 
     def update(self, events: list[pg.event.Event]) -> None:
@@ -42,27 +45,23 @@ class Core:
         self.update_inputs(events)
         self.check_player_input()
 
+        self.pointer.update()
+
 
     def check_player_input(self) -> None:
 
-        if self.mouse_pressed[1]:
-            ...
+        if self.mouse[3]:
+            if self.mouse_pressed[3]:
+                self.pointer = Pointer(self.GFX['pointer.png'], pos=self.mouse_pressed_at[3], centered=True)
+            self.pathing_to = self.mouse[0]
+
+        if move := (Vector2(self.pathing_to) - Vector2(self.player.rect.center)):
+            if move.length() > self.playerspeed:
+                move.scale_to_length(self.playerspeed)
+            self.player.pos += move
 
         if self.keys_pressed[pg.K_ESCAPE]:
             ...
-
-        move = pg.Vector2()
-        if self.keys[pg.K_w]:
-            move.y -= self.playerspeed
-        if self.keys[pg.K_s]:
-            move.y += self.playerspeed
-        if self.keys[pg.K_a]:
-            move.x -= self.playerspeed
-        if self.keys[pg.K_d]:
-            move.x += self.playerspeed
-        if move != pg.Vector2():
-            move.scale_to_length(self.playerspeed)
-            self.player.pos += move
 
 
     def update_inputs(self, events: list[pg.event.Event]) -> None:
@@ -101,6 +100,17 @@ class Core:
     def draw(self) -> None:
         self.window.fill((0, 0, 0))
 
+        self.pointer.draw(self.window)
         self.player.draw(self.window)
 
         pg.display.update()
+
+
+class Pointer(GameObject):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.time = int(Core.FPS * 0.6)
+    def update(self):
+        self.time -= 1
+        if self.time < 0:
+            self.visible = False
