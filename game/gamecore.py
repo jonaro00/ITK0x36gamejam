@@ -1,4 +1,5 @@
-from os import P_OVERLAY, kill
+from random import choice, randint
+
 import pygame as pg
 from pygame import Vector2
 
@@ -36,7 +37,7 @@ class Core:
 
         self.bg = GameObject(self.GFX['bg.png'])
 
-        self.player = GameObject(self.GFX['nat.png'], size=(60,50))
+        self.player = GameObject(self.GFX['nat.png'], size=(60,50), pos=self.window.get_rect().center, centered=True)
         self.playerspeed = int(Core.FPS / 15)
         self.pathing_to = self.player.rect.center
         self.pointer = Pointer(self.GFX['pointer.png'], pos=(-100, -100))
@@ -44,7 +45,12 @@ class Core:
         self.points = 0
 
         self.enemies: list[Enemy] = []
-        self.enemies.append(Enemy(self.player, self.GFX['hotdog.png'], pos=(self.WINDOW_HEIGHT,self.WINDOW_HEIGHT), kill_func=self.enemies.remove))
+        Enemy.textures = [
+            self.GFX['hotdog.png'],
+            self.GFX['simonbigbrain.png'],
+            self.GFX['simonpog.png'],
+        ]
+        self.enemy_size = (32, 32)
 
         self.Q_CD = int(Core.FPS * 1)
         self.q_cd = 0
@@ -75,7 +81,7 @@ class Core:
 
         def explode_bomb():
             for e in self.enemies.copy():
-                if (Vector2(self.bomb.rect.center) - Vector2(e.rect.center)).length() <= 80:
+                if (Vector2(self.bomb.rect.center) - Vector2(e.rect.center)).length() <= 150:
                     e.kill()
                     self.points += 1
             self.bomb = None
@@ -92,9 +98,20 @@ class Core:
                     e.kill()
                     laz.kill()
                     self.points += 1
+                    break
             laz.update()
         for e in self.enemies:
-            e.update()
+            e.update(self.flash)
+
+        if not randint(0, 60):
+            axis = randint(0,1)
+            if axis:
+                y = randint(0, self.WINDOW_HEIGHT)
+                x = choice([0-self.enemy_size[0], self.WINDOW_WIDTH])
+            else:
+                x = randint(0, self.WINDOW_WIDTH)
+                y = choice([0-self.enemy_size[1], self.WINDOW_HEIGHT])
+            self.enemies.append(Enemy(self.player, size=self.enemy_size, pos=(x, y), kill_func=self.enemies.remove))
 
 
     def check_player_input(self) -> None:
@@ -200,11 +217,14 @@ class Lazer(GameObject):
         self.pos += self.move
 
 class Enemy(GameObject):
+    textures = []
     speed = 2
     def __init__(self, target, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(choice(self.textures), *args, **kwargs)
         self.target = target
-    def update(self):
+    def update(self, slowed=False):
+        speed = (self.speed if not slowed else self.speed / 2) or 1
         self.move = (Vector2(self.target.rect.center) - Vector2(self.rect.center))
-        self.move.scale_to_length(self.speed)
+        if self.move != Vector2():
+            self.move.scale_to_length(speed)
         self.pos += self.move
