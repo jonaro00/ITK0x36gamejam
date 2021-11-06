@@ -35,6 +35,8 @@ class Core:
         self.mouse_pressed = [False]*17
         self.mouse_released = [False]*17
 
+        self.gameover = False
+
         self.bg = GameObject(self.GFX['bg.png'])
 
         self.player = GameObject(self.GFX['nat.png'], size=(60,50), pos=self.window.get_rect().center, centered=True)
@@ -42,6 +44,9 @@ class Core:
         self.pathing_to = self.player.rect.center
         self.pointer = Pointer(self.GFX['pointer.png'], pos=(-100, -100))
 
+        self.hp = 10
+        self.hp_cd = 0
+        self.HP_CD = Core.FPS * 1
         self.points = 0
 
         self.enemies: list[Enemy] = []
@@ -69,6 +74,9 @@ class Core:
 
     def update(self, events: list[pg.event.Event]) -> None:
         """Function in charge of everything that happens during a game loop"""
+
+        if self.gameover:
+            return
 
         self.update_inputs(events)
         self.check_player_input()
@@ -99,9 +107,17 @@ class Core:
                     laz.kill()
                     self.points += 1
                     break
-            laz.update()
+            else: laz.update()
+        self.hp_cd -= 1
         for e in self.enemies:
             e.update(self.flash)
+            if e.rect.colliderect(self.player.rect) and self.hp_cd <= 0:
+                self.hp -= 1
+                if self.hp <= 0:
+                    self.gameover = True
+                    return
+                self.hp_cd = self.HP_CD
+                break
 
         if not randint(0, 60):
             axis = randint(0,1)
@@ -192,6 +208,10 @@ class Core:
             self.window.blit(self._flash, (0,0))
 
         tools.Font.write(self.window, tools.Font.consolas_b24, f'Points: {self.points}', pos=(0, self.WINDOW_HEIGHT), anchor=6)
+        tools.Font.write(self.window, tools.Font.consolas_b24, f'HP: {self.hp}', pos=(0, self.WINDOW_HEIGHT-24), anchor=6)
+        if self.gameover:
+            tools.Font.write(self.window, tools.Font.consolas_b24, 'game over', pos=self.window.get_rect().center, anchor=4, color=(255,0,0))
+
 
         pg.display.update()
 
