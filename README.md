@@ -1,25 +1,42 @@
-# My pygame
+# ITK LAN 0x36 Game Jam
 
-...
+A simple game featuring Nat, the mascot of ITK.
 
 ## Getting Started
 
-...
+Python 3.10+ required.
 
 ### Required packages
 
 To install the required packages:
 
-> `pip install -r requirements.txt`
+```sh
+pip install -r requirements.txt
+```
 
 ### Run the game
 
-> `python run_game.py`
+```sh
+# Windows:
+python run_game.py
+
+# Linux:
+python3.10 run_game.py
+# or
+./run_game.py
+```
 
 ## How to play
 
-...
+### Objective
+
+Kill as many invading Simons and hot dogs as possible!
 
 ### Controls
 
-...
+Key/Button | Action    | Cooldown
+---------- | --------- | --------
+Right click | Move Nat. | None:
+Q        | Shoot 2 lazers. | 1s
+W        | Flash that slows enemies for 2s. | 8s
+E        | Place bomb. Detonate by shooting it with lazer. One bomb availible at a time. | 1s
