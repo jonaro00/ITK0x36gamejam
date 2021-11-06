@@ -34,6 +34,8 @@ class Core:
         self.mouse_pressed = [False]*17
         self.mouse_released = [False]*17
 
+        self.bg = GameObject(self.GFX['bg.png'])
+
         self.player = GameObject(self.GFX['nat.png'], size=(60,50))
         self.playerspeed = int(Core.FPS / 15)
         self.pathing_to = self.player.rect.center
@@ -84,6 +86,7 @@ class Core:
                 laz.kill()
             if self.bomb and self.bomb.rect.colliderect(laz.rect):
                 explode_bomb()
+                laz.kill()
             for e in self.enemies.copy():
                 if laz.rect.colliderect(e.rect):
                     e.kill()
@@ -156,6 +159,8 @@ class Core:
     def draw(self) -> None:
         self.window.fill((0, 0, 0))
 
+        self.bg.draw(self.window)
+
         self.pointer.draw(self.window)
         if self.bomb: self.bomb.draw(self.window)
         for e in self.enemies:
@@ -168,6 +173,8 @@ class Core:
         if self.flash >= 0:
             self._flash.set_alpha(int(self.flash / self.flash_dur * 190))
             self.window.blit(self._flash, (0,0))
+
+        tools.Font.write(self.window, tools.Font.consolas_b24, f'Points: {self.points}', pos=(0, self.WINDOW_HEIGHT), anchor=6)
 
         pg.display.update()
 
