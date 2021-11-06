@@ -15,7 +15,8 @@ class Core:
 
     def __init__(self, window: pg.Surface) -> None:
         self.window = window
-        self.WINDOW_WIDTH, self.WINDOW_HEIGHT = self.window.get_bounding_rect().size
+        self.WINDOW_RECT = self.window.get_rect()
+        self.WINDOW_WIDTH, self.WINDOW_HEIGHT = self.WINDOW_RECT.size
 
         # Load graphics and sounds
         self.GFX = tools.load_graphics(package_dir / 'images')
@@ -38,6 +39,8 @@ class Core:
         self.pathing_to = self.player.rect.center
         self.pointer = Pointer(self.GFX['pointer.png'], pos=(-100, -100))
 
+        self.lazers: list[Lazer] = []
+
 
     def update(self, events: list[pg.event.Event]) -> None:
         """Function in charge of everything that happens during a game loop"""
@@ -46,6 +49,10 @@ class Core:
         self.check_player_input()
 
         self.pointer.update()
+        for laz in self.lazers.copy():
+            if not laz.rect.colliderect(self.WINDOW_RECT):
+                laz.kill()
+            laz.update()
 
 
     def check_player_input(self) -> None:
@@ -60,8 +67,9 @@ class Core:
                 move.scale_to_length(self.playerspeed)
             self.player.pos += move
 
-        if self.keys_pressed[pg.K_ESCAPE]:
-            ...
+        if self.keys_pressed[pg.K_q]:
+            self.lazers.append(Lazer(self.mouse[0], self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(5,5), centered=True, kill_func=self.lazers.remove))
+            self.lazers.append(Lazer(self.mouse[0], self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(-5,5), centered=True, kill_func=self.lazers.remove))
 
 
     def update_inputs(self, events: list[pg.event.Event]) -> None:
@@ -103,6 +111,9 @@ class Core:
         self.pointer.draw(self.window)
         self.player.draw(self.window)
 
+        for laz in self.lazers:
+            laz.draw(self.window)
+
         pg.display.update()
 
 
@@ -114,3 +125,14 @@ class Pointer(GameObject):
         self.time -= 1
         if self.time < 0:
             self.visible = False
+
+
+class Lazer(GameObject):
+    speed = 8
+    def __init__(self, target, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.angle_towards(target)
+        self.move = (Vector2(target) - Vector2(self.rect.center))
+        self.move.scale_to_length(self.speed)
+    def update(self):
+        self.pos += self.move
