@@ -3,8 +3,9 @@ from pygame import Vector2
 
 
 class GameObject:
-    def __init__(self, texture: pg.Surface, pos=(0, 0), visible=True):
-        self.texture = texture
+    def __init__(self, texture: pg.Surface, size=None, pos=(0, 0), visible=True):
+        size = texture.get_size() if size is None else size
+        self.texture = pg.transform.scale(texture, size)
         self._pos = pos
         self.visible = visible
 

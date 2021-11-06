@@ -61,7 +61,7 @@ def load_graphics(directory: Path, accept=('.png', '.jpg')) -> dict:
     graphics = {}
     for pic in directory.iterdir():
         if pic.suffix.lower() in accept:
-            graphics[pic] = pg.image.load(os.path.join(directory, pic)).convert_alpha()
+            graphics[str(pic.relative_to(directory))] = pg.image.load(os.path.join(directory, pic)).convert_alpha()
     return graphics
 
 def load_sounds(directory: Path, accept=('.mp3', '.wav', '.ogg')) -> dict:
