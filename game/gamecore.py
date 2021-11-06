@@ -35,12 +35,20 @@ class Core:
         self.mouse_released = [False]*17
 
         self.player = GameObject(self.GFX['nat.png'], size=(60,50))
-        self.playerspeed = 4
+        self.playerspeed = int(Core.FPS / 15)
         self.pathing_to = self.player.rect.center
         self.pointer = Pointer(self.GFX['pointer.png'], pos=(-100, -100))
 
+        self.Q_CD = int(Core.FPS * 1)
+        self.q_cd = 0
         self.lazers: list[Lazer] = []
 
+        self.W_CD = int(Core.FPS * 8)
+        self.w_cd = 0
+        self.flash = 0
+        self._flash = pg.Surface((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))#), depth=pg.SRCALPHA)
+        self._flash.fill((255,255,255))
+        self.flash_dur = int(Core.FPS * 2)
 
     def update(self, events: list[pg.event.Event]) -> None:
         """Function in charge of everything that happens during a game loop"""
@@ -58,8 +66,7 @@ class Core:
     def check_player_input(self) -> None:
 
         if self.mouse[3]:
-            if self.mouse_pressed[3]:
-                self.pointer = Pointer(self.GFX['pointer.png'], pos=self.mouse_pressed_at[3], centered=True)
+            self.pointer = Pointer(self.GFX['pointer.png'], pos=self.mouse[0], centered=True)
             self.pathing_to = self.mouse[0]
 
         if move := (Vector2(self.pathing_to) - Vector2(self.player.rect.center)):
@@ -67,9 +74,18 @@ class Core:
                 move.scale_to_length(self.playerspeed)
             self.player.pos += move
 
-        if self.keys_pressed[pg.K_q]:
+        self.q_cd -= 1
+        if self.keys_pressed[pg.K_q] and self.q_cd <= 0:
             self.lazers.append(Lazer(self.mouse[0], self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(5,5), centered=True, kill_func=self.lazers.remove))
             self.lazers.append(Lazer(self.mouse[0], self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(-5,5), centered=True, kill_func=self.lazers.remove))
+            self.q_cd = self.Q_CD
+
+        self.w_cd -= 1
+        if self.flash > 0:
+            self.flash -= 1
+        if self.keys_pressed[pg.K_w] and self.w_cd <= 0:
+            self.flash = self.flash_dur
+            self.w_cd = self.W_CD
 
 
     def update_inputs(self, events: list[pg.event.Event]) -> None:
@@ -113,6 +129,10 @@ class Core:
 
         for laz in self.lazers:
             laz.draw(self.window)
+
+        if self.flash >= 0:
+            self._flash.set_alpha(int(self.flash / self.flash_dur * 190))
+            self.window.blit(self._flash, (0,0))
 
         pg.display.update()
 
