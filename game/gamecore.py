@@ -1,4 +1,4 @@
-from os import P_OVERLAY
+from os import P_OVERLAY, kill
 import pygame as pg
 from pygame import Vector2
 
@@ -39,6 +39,11 @@ class Core:
         self.pathing_to = self.player.rect.center
         self.pointer = Pointer(self.GFX['pointer.png'], pos=(-100, -100))
 
+        self.points = 0
+
+        self.enemies: list[Enemy] = []
+        self.enemies.append(Enemy(self.player, self.GFX['hotdog.png'], pos=(self.WINDOW_HEIGHT,self.WINDOW_HEIGHT), kill_func=self.enemies.remove))
+
         self.Q_CD = int(Core.FPS * 1)
         self.q_cd = 0
         self.lazers: list[Lazer] = []
@@ -50,17 +55,43 @@ class Core:
         self._flash.fill((255,255,255))
         self.flash_dur = int(Core.FPS * 2)
 
+        self.E_CD = int(Core.FPS * 1)
+        self.e_cd = 0
+        self.bomb = None
+
     def update(self, events: list[pg.event.Event]) -> None:
         """Function in charge of everything that happens during a game loop"""
 
         self.update_inputs(events)
         self.check_player_input()
 
+        # move player
+        if move := (Vector2(self.pathing_to) - Vector2(self.player.rect.center)):
+            if move.length() > self.playerspeed:
+                move.scale_to_length(self.playerspeed)
+            self.player.pos += move
+
+        def explode_bomb():
+            for e in self.enemies.copy():
+                if (Vector2(self.bomb.rect.center) - Vector2(e.rect.center)).length() <= 80:
+                    e.kill()
+                    self.points += 1
+            self.bomb = None
+
         self.pointer.update()
         for laz in self.lazers.copy():
             if not laz.rect.colliderect(self.WINDOW_RECT):
                 laz.kill()
+            if self.bomb and self.bomb.rect.colliderect(laz.rect):
+                explode_bomb()
+            for e in self.enemies.copy():
+                if laz.rect.colliderect(e.rect):
+                    e.kill()
+                    laz.kill()
+                    self.points += 1
             laz.update()
+        for e in self.enemies:
+            e.update()
 
 
     def check_player_input(self) -> None:
@@ -68,11 +99,6 @@ class Core:
         if self.mouse[3]:
             self.pointer = Pointer(self.GFX['pointer.png'], pos=self.mouse[0], centered=True)
             self.pathing_to = self.mouse[0]
-
-        if move := (Vector2(self.pathing_to) - Vector2(self.player.rect.center)):
-            if move.length() > self.playerspeed:
-                move.scale_to_length(self.playerspeed)
-            self.player.pos += move
 
         self.q_cd -= 1
         if self.keys_pressed[pg.K_q] and self.q_cd <= 0:
@@ -86,6 +112,12 @@ class Core:
         if self.keys_pressed[pg.K_w] and self.w_cd <= 0:
             self.flash = self.flash_dur
             self.w_cd = self.W_CD
+
+        if self.bomb is None:
+            self.e_cd -= 1
+        if self.keys_pressed[pg.K_e] and self.e_cd <= 0:
+            self.bomb = GameObject(self.GFX['bomb.png'], pos=self.player.rect.center, centered=True)
+            self.e_cd = self.E_CD
 
 
     def update_inputs(self, events: list[pg.event.Event]) -> None:
@@ -125,6 +157,9 @@ class Core:
         self.window.fill((0, 0, 0))
 
         self.pointer.draw(self.window)
+        if self.bomb: self.bomb.draw(self.window)
+        for e in self.enemies:
+            e.draw(self.window)
         self.player.draw(self.window)
 
         for laz in self.lazers:
@@ -155,4 +190,14 @@ class Lazer(GameObject):
         self.move = (Vector2(target) - Vector2(self.rect.center))
         self.move.scale_to_length(self.speed)
     def update(self):
+        self.pos += self.move
+
+class Enemy(GameObject):
+    speed = 2
+    def __init__(self, target, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.target = target
+    def update(self):
+        self.move = (Vector2(self.target.rect.center) - Vector2(self.rect.center))
+        self.move.scale_to_length(self.speed)
         self.pos += self.move
