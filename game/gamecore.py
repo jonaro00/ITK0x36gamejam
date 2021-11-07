@@ -198,7 +198,7 @@ class Core:
         # Checks where mouse buttons were clicked
         # and where they were released
         for btn, now in self.mouse.items():
-            prev = mouse_prev.get(btn, False)
+            prev = mouse_prev[btn]
             if pressed := not prev and now:
                 self.mouse_pressed_at[btn] = self.mouse_pos
             self.mouse_pressed[btn] = pressed
@@ -206,7 +206,7 @@ class Core:
 
         # Checks which keys were pressed or released
         for key, now in self.keys.items():
-            prev = keys_prev.get(key, False)
+            prev = keys_prev[key]
             self.keys_pressed[key] = not prev and now
             self.keys_released[key] = prev and not now
 

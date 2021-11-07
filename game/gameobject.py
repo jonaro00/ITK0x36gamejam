@@ -1,4 +1,3 @@
-from os import kill
 import pygame as pg
 from pygame import Vector2
 
