@@ -2,6 +2,8 @@
 
 A simple game featuring Nat, the mascot of ITK.
 
+![image](https://user-images.githubusercontent.com/54029719/140628891-ea1a122f-e94a-4df3-8cc5-7e93a5b62976.png)
+
 ## Getting Started
 
 Python 3.10+ required.
