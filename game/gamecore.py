@@ -1,4 +1,5 @@
 from random import choice, randint
+from collections import defaultdict
 
 import pygame as pg
 from pygame import Vector2
@@ -19,27 +20,31 @@ class Core:
         self.WINDOW_RECT = self.window.get_rect()
         self.WINDOW_WIDTH, self.WINDOW_HEIGHT = self.WINDOW_RECT.size
 
+        pg.mouse.set_system_cursor(pg.SYSTEM_CURSOR_CROSSHAIR)
+
         # Load graphics and sounds
         self.GFX = tools.load_graphics(package_dir / 'images')
         self.SFX = tools.load_sounds(package_dir / 'sounds')
 
-        # Lists that store held down, pressed, and released keys.
-        self.keys = [False]*360
-        self.keys_pressed = [False]*360
-        self.keys_released = [False]*360
-        # First item will become tuple with mouse position, the rest are True/False if a button is pressed.
-        self.mouse = [False]*17
-        # Stores the positions where every mouse button was last pressed. First item not used.
-        self.mouse_pressed_at = [None]*17
-        # Stores if the mouse buttons were pressed/released in the latest loop. First item not used.
-        self.mouse_pressed = [False]*17
-        self.mouse_released = [False]*17
+        # Dicts that store held down, pressed, and released keys.
+        self.keys = defaultdict(bool)
+        self.keys_pressed = defaultdict(bool)
+        self.keys_released = defaultdict(bool)
+        # Is the mouse button pressed?
+        self.mouse = defaultdict(bool)
+        # Current mouse position
+        self.mouse_pos = (0, 0)
+        # Stores the positions where every mouse button was last pressed.
+        self.mouse_pressed_at = {}
+        # Stores if the mouse buttons were pressed/released in the latest loop.
+        self.mouse_pressed = defaultdict(bool)
+        self.mouse_released = defaultdict(bool)
 
         self.gameover = False
 
         self.bg = GameObject(self.GFX['bg.png'])
 
-        self.player = GameObject(self.GFX['nat.png'], size=(60,50), pos=self.window.get_rect().center, centered=True)
+        self.player = GameObject(self.GFX['nat.png'], size=(60,50), pos=self.WINDOW_RECT.center, centered=True)
         self.playerspeed = int(Core.FPS / 15)
         self.pathing_to = self.player.rect.center
         self.pointer = Pointer(self.GFX['pointer.png'], pos=(-100, -100))
@@ -132,14 +137,14 @@ class Core:
 
     def check_player_input(self) -> None:
 
-        if self.mouse[3]:
-            self.pointer = Pointer(self.GFX['pointer.png'], pos=self.mouse[0], centered=True)
-            self.pathing_to = self.mouse[0]
+        if self.mouse[pg.BUTTON_RIGHT]:
+            self.pointer = Pointer(self.GFX['pointer.png'], pos=self.mouse_pos, centered=True)
+            self.pathing_to = self.mouse_pos
 
         self.q_cd -= 1
         if self.keys_pressed[pg.K_q] and self.q_cd <= 0:
-            self.lazers.append(Lazer(self.mouse[0], self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(5,5), centered=True, kill_func=self.lazers.remove))
-            self.lazers.append(Lazer(self.mouse[0], self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(-5,5), centered=True, kill_func=self.lazers.remove))
+            self.lazers.append(Lazer(self.mouse_pos, self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(5,5), centered=True, kill_func=self.lazers.remove))
+            self.lazers.append(Lazer(self.mouse_pos, self.GFX['lazer.png'], pos=Vector2(self.player.rect.center)+(-5,5), centered=True, kill_func=self.lazers.remove))
             self.q_cd = self.Q_CD
 
         self.w_cd -= 1
@@ -170,7 +175,7 @@ class Core:
                 case pg.MOUSEBUTTONUP:
                     self.mouse[event.button] = False
                 case pg.MOUSEMOTION:
-                    self.mouse[0] = event.pos
+                    self.mouse_pos = event.pos
                 case pg.KEYDOWN:
                     self.keys[event.key] = True
                 case pg.KEYUP:
@@ -178,16 +183,18 @@ class Core:
 
         # Checks where mouse buttons were clicked
         # and where they were released
-        for i, (prev, now) in enumerate(zip(mouse_prev[1:], self.mouse[1:]), start=1):
+        for btn, now in self.mouse.items():
+            prev = mouse_prev.get(btn, False)
             if pressed := not prev and now:
-                self.mouse_pressed_at[i] = self.mouse[0]
-            self.mouse_pressed[i] = pressed
-            self.mouse_released[i] = prev and not now
+                self.mouse_pressed_at[btn] = self.mouse_pos
+            self.mouse_pressed[btn] = pressed
+            self.mouse_released[btn] = prev and not now
 
         # Checks which keys were pressed or released
-        for i, (prev, now) in enumerate(zip(keys_prev, self.keys)):
-            self.keys_pressed[i] = not prev and now
-            self.keys_released[i] = prev and not now
+        for key, now in self.keys.items():
+            prev = keys_prev.get(key, False)
+            self.keys_pressed[key] = not prev and now
+            self.keys_released[key] = prev and not now
 
     def draw(self) -> None:
         self.window.fill((0, 0, 0))
@@ -210,7 +217,7 @@ class Core:
         tools.Font.write(self.window, tools.Font.consolas_b24, f'Points: {self.points}', pos=(0, self.WINDOW_HEIGHT), anchor=6)
         tools.Font.write(self.window, tools.Font.consolas_b24, f'HP: {self.hp}', pos=(0, self.WINDOW_HEIGHT-24), anchor=6)
         if self.gameover:
-            tools.Font.write(self.window, tools.Font.consolas_b24, 'game over', pos=self.window.get_rect().center, anchor=4, color=(255,0,0))
+            tools.Font.write(self.window, tools.Font.consolas_b24, 'game over', pos=self.WINDOW_RECT.center, anchor=4, color=(255,0,0))
 
 
         pg.display.update()
