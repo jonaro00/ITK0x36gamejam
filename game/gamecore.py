@@ -77,13 +77,17 @@ class Core:
         self.e_cd = 0
         self.bomb = None
 
-    def update(self, events: list[pg.event.Event]) -> None:
+    def update(self, events: list[pg.event.Event]) -> bool | None:
         """Function in charge of everything that happens during a game loop"""
 
+        self.update_inputs(events)
+
         if self.gameover:
+            # wait for game restart
+            if self.keys_pressed[pg.K_RETURN]:
+                return True
             return
 
-        self.update_inputs(events)
         self.check_player_input()
 
         # move player
@@ -92,19 +96,19 @@ class Core:
                 move.scale_to_length(self.playerspeed)
             self.player.pos += move
 
-        def explode_bomb():
-            for e in self.enemies.copy():
-                if (Vector2(self.bomb.rect.center) - Vector2(e.rect.center)).length() <= 150:
-                    e.kill()
-                    self.points += 1
-            self.bomb = None
-
+        # update other units
         self.pointer.update()
+        # lazer collisions
         for laz in self.lazers.copy():
             if not laz.rect.colliderect(self.WINDOW_RECT):
                 laz.kill()
             if self.bomb and self.bomb.rect.colliderect(laz.rect):
-                explode_bomb()
+                # explode bomb
+                for e in self.enemies.copy():
+                    if (Vector2(self.bomb.rect.center) - Vector2(e.rect.center)).length() <= 150:
+                        e.kill()
+                        self.points += 1
+                self.bomb = None
                 laz.kill()
             for e in self.enemies.copy():
                 if laz.rect.colliderect(e.rect):
@@ -113,6 +117,7 @@ class Core:
                     self.points += 1
                     break
             else: laz.update()
+        # player collision with enemies
         self.hp_cd -= 1
         for e in self.enemies:
             e.update(self.flash)
@@ -124,6 +129,7 @@ class Core:
                 self.hp_cd = self.HP_CD
                 break
 
+        # generate enemies
         if not randint(0, 60):
             axis = randint(0,1)
             if axis:
@@ -217,8 +223,8 @@ class Core:
         tools.Font.write(self.window, tools.Font.consolas_b24, f'Points: {self.points}', pos=(0, self.WINDOW_HEIGHT), anchor=6)
         tools.Font.write(self.window, tools.Font.consolas_b24, f'HP: {self.hp}', pos=(0, self.WINDOW_HEIGHT-24), anchor=6)
         if self.gameover:
-            tools.Font.write(self.window, tools.Font.consolas_b24, 'game over', pos=self.WINDOW_RECT.center, anchor=4, color=(255,0,0))
-
+            tools.Font.write(self.window, tools.Font.consolas_b24, 'Game over', pos=self.WINDOW_RECT.center, anchor=4, color=(255,0,0))
+            tools.Font.write(self.window, tools.Font.consolas_b24, 'Press [Return] to play again', pos=Vector2(self.WINDOW_RECT.center)+(0,24), anchor=4, color=(255,0,0))
 
         pg.display.update()
 

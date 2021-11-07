@@ -21,7 +21,9 @@ def main():
                 pg.quit()
                 return
 
-        gc.update(events)
+        if gc.update(events):
+            gc = Core(window)
+            continue
 
         gc.draw()
 
