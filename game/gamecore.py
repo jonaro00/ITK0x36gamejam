@@ -70,12 +70,19 @@ class Core:
         self.w_cd = 0
         self.flash = 0
         self._flash = pg.Surface((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))#), depth=pg.SRCALPHA)
-        self._flash.fill((255,255,255))
+        self._flash.fill((110,150,255))
         self.flash_dur = int(Core.FPS * 2)
 
         self.E_CD = int(Core.FPS * 1)
         self.e_cd = 0
         self.bomb = None
+        self.bomb_radius = 150
+
+        self.boom_spot = (-100, -100)
+        self.boom = pg.Surface((self.bomb_radius*2, self.bomb_radius*2), flags=pg.SRCALPHA)
+        pg.draw.circle(self.boom, (255,100,0,100), self.boom.get_rect().center, self.bomb_radius)
+
+        self.cd_ui = pg.Surface((150, 50), flags=pg.SRCALPHA)
 
     def update(self, events: list[pg.event.Event]) -> bool | None:
         """Function in charge of everything that happens during a game loop"""
@@ -104,8 +111,9 @@ class Core:
                 laz.kill()
             if self.bomb and self.bomb.rect.colliderect(laz.rect):
                 # explode bomb
+                self.boom_spot = self.bomb.rect.center
                 for e in self.enemies.copy():
-                    if (Vector2(self.bomb.rect.center) - Vector2(e.rect.center)).length() <= 150:
+                    if (Vector2(self.bomb.rect.center) - Vector2(e.rect.center)).length() <= self.bomb_radius:
                         e.kill()
                         self.points += 1
                 self.bomb = None
@@ -211,17 +219,35 @@ class Core:
         if self.bomb: self.bomb.draw(self.window)
         for e in self.enemies:
             e.draw(self.window)
+        if 1 > self.e_cd / self.E_CD > 0.7:
+            self.window.blit(self.boom, Vector2(self.boom_spot)-(self.bomb_radius, self.bomb_radius))
+
         self.player.draw(self.window)
 
         for laz in self.lazers:
             laz.draw(self.window)
+
+        self.cd_ui.fill((0,0,0,0))
+        c1 = (255,0,0,100)
+        c2 = (255,255,255,100)
+        for i, (cd, max_cd, c) in enumerate((
+            (self.q_cd, self.Q_CD, 'Q'),
+            (self.w_cd, self.W_CD, 'W'),
+            (self.e_cd, self.E_CD, 'E'),
+            )):
+            h = cd / max_cd * 50
+            pg.draw.rect(self.cd_ui, c1, (i*50,50-h,50,h))
+            tools.Font.write(self.cd_ui, tools.Font.cambria30, c, color=c2, pos=(25+i*50,25), anchor=4)
+        self.window.blit(self.cd_ui, (self.WINDOW_WIDTH/2-75,self.WINDOW_HEIGHT-50))
 
         if self.flash >= 0:
             self._flash.set_alpha(int(self.flash / self.flash_dur * 190))
             self.window.blit(self._flash, (0,0))
 
         tools.Font.write(self.window, tools.Font.consolas_b24, f'Points: {self.points}', pos=(0, self.WINDOW_HEIGHT), anchor=6)
-        tools.Font.write(self.window, tools.Font.consolas_b24, f'HP: {self.hp}', pos=(0, self.WINDOW_HEIGHT-24), anchor=6)
+        tools.Font.write(self.window, tools.Font.consolas_b24, f'HP: {self.hp}', pos=(0, self.WINDOW_HEIGHT-24), anchor=6,
+            color=(255,0,0) if self.hp_cd / self.HP_CD > 0.5 else (255,255,255)
+        )
         if self.gameover:
             tools.Font.write(self.window, tools.Font.consolas_b24, 'Game over', pos=self.WINDOW_RECT.center, anchor=4, color=(255,0,0))
             tools.Font.write(self.window, tools.Font.consolas_b24, 'Press [Return] to play again', pos=Vector2(self.WINDOW_RECT.center)+(0,24), anchor=4, color=(255,0,0))
