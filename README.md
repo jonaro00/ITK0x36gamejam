@@ -36,7 +36,7 @@ Kill as many invading Simons and hot dogs as possible!
 
 Key/Button | Action    | Cooldown
 ---------- | --------- | --------
-Right click | Move Nat. | None:
+Right click | Move Nat. | None
 Q        | Shoot 2 lazers. | 1s
 W        | Flash that slows enemies for 2s. | 8s
 E        | Place bomb. Detonate by shooting it with lazer. One bomb availible at a time. | 1s
